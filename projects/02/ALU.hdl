@@ -44,8 +44,7 @@ CHIP ALU {
     // Use Mux to choose x or false
     Mux16(a=x, b=false, sel=zx, out=xZx);
     // nx -> negate x; negate all bits, not arithmetic negation (multiply by -1)
-    // Mux(x_zx, Not16(x)) = x_nx
-    // Calculate Not(x_zx), then use Mux to choose between x_zx and Not(x_zx)
+    // Calculate Not(xZx), then use Mux to choose between xZx and Not(xZx)
     Not16(in=xZx, out=notXZx);
     Mux16(a=xZx, b=notXZx, sel=nx, out=xZxNx);
 
@@ -53,18 +52,28 @@ CHIP ALU {
     // Use Mux to choose y or false
     Mux16(a=y, b=false, sel=zy, out=yZy);
     // ny -> negate y; negate all bits, not arithmetic negation (multiply by -1)
-    // Mux(y, Not16(y)) = y_ny
     Not16(in=yZy, out=notYZy);
     Mux16(a=yZy, b=notYZy, sel=ny, out=yZyNy);
 
-    // f == 0 -> x_zx_nx & y_zy_ny
+    // f == 0 -> xZxNx & yZyNy
     And16(a=xZxNx, b=yZyNy, out=xAndY);
-    // f == 1 -> x_zx_nx + y_zy_ny
+    // f == 1 -> xZxNx + yZyNy
     Add16(a=xZxNx, b=yZyNy, out=xPlusY);
     // choose based on f
     Mux16(a=xAndY, b=xPlusY, sel=f, out=outF);
 
-    // Negate output?
+    // Negate output based on no pin.
     Not16(in=outF, out=notOutF);
-    Mux16(a=outF, b=notOutF, sel=no, out=out);
+    Mux16(a=outF, b=notOutF, sel=no, out=out, out[0..7]=outNegLow, out[8..15]=outNegHi, out[15]=outMsb);
+
+    // zr
+    // Take bitwise OR of maybe-zeroed out.
+    Or8Way(in=outNegLow, out=zrLow);
+    Or8Way(in=outNegHi, out=zrHi);
+    Or(a=zrLow, b=zrHi, out=isZr);
+    Not(in=isZr, out=zr);
+
+    // ng
+    // MSB of out tells us whether out is negative because we're using 2's complement.
+    And(a=outMsb, b=true, out=ng);
 }
