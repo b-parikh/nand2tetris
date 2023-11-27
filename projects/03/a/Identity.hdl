@@ -1,0 +1,13 @@
+/**
+ * Identity:
+ * in == out
+ *
+ * HELPER CHIP: Useful for sequential chip building
+ */
+CHIP Identity {
+    IN in;
+    OUT out;
+
+    PARTS:
+    And(a=in, b=in, out=out);
+}
